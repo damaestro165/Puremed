@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="60" viewBox="0 0 220 60" fill="none">
+  <g>
+    <!-- Plus Icon -->
+    <path d="M20 15h10v10h10v10h-10v10h-10v-10H10V25h10V15z" fill="#00B5D8"/>
+    <!-- Text -->
+    <text x="45" y="38" font-family="Segoe UI, sans-serif" font-size="28" font-weight="bold" fill="#2D3748">PlusMed</text>
+  </g>
+</svg>
