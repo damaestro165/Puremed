@@ -5,7 +5,7 @@ import Header from "../components/Header"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
-import {toast} from "sonner"
+import {toast, Toaster} from "sonner"
 
 // Type definitions
 interface Product {
@@ -245,7 +245,7 @@ const CategoryPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-2 w-full">
       <Header />
-      
+      <Toaster/>
       {/* Category Header */}
       <div className="flex flex-col justify-center items-center w-full p-4 gap-4 bg-gray-50">
         <div className="flex flex-col items-center gap-2 max-w-4xl mx-auto text-center">
