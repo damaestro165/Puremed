@@ -1,35 +1,32 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "../components/Header"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-
-
-interface CartItem {  
-  _id: string
-  name: string
-  price: number
-  imageUrl: string
-  quantity: number
-}
+import { toast, Toaster } from "sonner"
+import CartService, { Cart, CartItem } from "../services/cartService"
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate()
   
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
+  const isUpdatingRef = useRef<boolean>(false)
 
-  // Load cart from localStorage
+  // Load cart using CartService
   useEffect(() => {
-    const loadCart = () => {
+    const loadCart = async () => {
       try {
-        const cart = localStorage.getItem('cart')
-        if (cart) {
-          setCartItems(JSON.parse(cart))
-        }
+        setLoading(true)
+        const fetchedCart = await CartService.getCart()
+        setCart(fetchedCart)
       } catch (error) {
         console.error('Error loading cart:', error)
-        setCartItems([])
+        toast.message('Error', {
+          description: 'Failed to load cart.',
+        })
+        setCart(null)
       } finally {
         setLoading(false)
       }
@@ -37,9 +34,12 @@ const CartPage: React.FC = () => {
 
     loadCart()
 
-    // Listen for cart updates from other components
+    // Listen for cart updates from other components (like header)
     const handleCartUpdate = (event: CustomEvent) => {
-      setCartItems(event.detail || [])
+      // Only reload if we're not currently updating an item from this page
+      if (!isUpdatingRef.current) {
+        loadCart()
+      }
     }
 
     window.addEventListener('cartUpdated', handleCartUpdate as EventListener)
@@ -48,45 +48,132 @@ const CartPage: React.FC = () => {
     }
   }, [])
 
-  // Save cart to localStorage and dispatch event
-  const saveCart = (newCart: CartItem[]) => {
-    setCartItems(newCart)
-    localStorage.setItem('cart', JSON.stringify(newCart))
-    window.dispatchEvent(new CustomEvent('cartUpdated', { detail: newCart }))
-  }
-
   // Update item quantity
-  const updateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) {
-      removeItem(itemId)
-      return
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    try {
+      if (newQuantity < 1) {
+        await removeItem(itemId)
+        return
+      }
+
+      // Set updating state
+      isUpdatingRef.current = true
+      setUpdatingItems(prev => new Set(prev).add(itemId))
+
+      const updatedCart = await CartService.updateCartItem(itemId, newQuantity)
+      
+      // Update local state immediately without triggering reload
+      if (updatedCart) {
+        setCart(updatedCart)
+      }
+
+      toast.message('Quantity Updated', {
+        description: 'Cart item quantity updated successfully.',
+      })
+    } catch (error: any) {
+      console.error('Error updating quantity:', error)
+      toast.message('Error', {
+        description: error.message || 'Failed to update item quantity.',
+      })
+      
+      // Reload cart on error to sync state
+      try {
+        const freshCart = await CartService.getCart()
+        setCart(freshCart)
+      } catch (reloadError) {
+        console.error('Failed to reload cart after error:', reloadError)
+      }
+    } finally {
+      // Clear updating state
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(itemId)
+        return newSet
+      })
+      
+      // Reset the updating flag after a brief delay
+      setTimeout(() => {
+        isUpdatingRef.current = false
+      }, 500)
     }
-
-
-    const updatedCart = cartItems.map(item =>
-      item._id === itemId ? { ...item, quantity: newQuantity } : item
-    )
-    saveCart(updatedCart)
-    
-
   }
 
   // Remove item from cart
-  const removeItem = (itemId: string) => {
-    const updatedCart = cartItems.filter(item => item._id !== itemId)
-    saveCart(updatedCart)
-    
- 
+  const removeItem = async (itemId: string) => {
+    try {
+      isUpdatingRef.current = true
+      setUpdatingItems(prev => new Set(prev).add(itemId))
+
+      const updatedCart = await CartService.removeFromCart(itemId)
+      
+      if (updatedCart) {
+        setCart(updatedCart)
+      }
+
+      toast.message('Item Removed', {
+        description: 'Item removed from cart successfully.',
+      })
+    } catch (error: any) {
+      console.error('Error removing item:', error)
+      toast.message('Error', {
+        description: error.message || 'Failed to remove item from cart.',
+      })
+      
+      // Reload cart on error
+      try {
+        const freshCart = await CartService.getCart()
+        setCart(freshCart)
+      } catch (reloadError) {
+        console.error('Failed to reload cart after error:', reloadError)
+      }
+    } finally {
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(itemId)
+        return newSet
+      })
+      
+      setTimeout(() => {
+        isUpdatingRef.current = false
+      }, 500)
+    }
   }
 
   // Clear entire cart
-  const clearCart = () => {
-    saveCart([])
-    
+  const clearCart = async () => {
+    try {
+      isUpdatingRef.current = true
+      const updatedCart = await CartService.clearCart()
+      
+      if (updatedCart) {
+        setCart(updatedCart)
+      }
+
+      toast.message('Cart Cleared', {
+        description: 'All items removed from cart.',
+      })
+    } catch (error: any) {
+      console.error('Error clearing cart:', error)
+      toast.message('Error', {
+        description: error.message || 'Failed to clear cart.',
+      })
+    } finally {
+      setTimeout(() => {
+        isUpdatingRef.current = false
+      }, 500)
+    }
+  }
+
+  // Handle input change for quantity
+  const handleQuantityInputChange = (itemId: string, value: string) => {
+    const newQuantity = parseInt(value) || 1
+    if (newQuantity > 0 && newQuantity <= 999) {
+      updateQuantity(itemId, newQuantity)
+    }
   }
 
   // Calculate totals
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const subtotal = cart?.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0
   const tax = subtotal * 0.08 // Assuming 8% tax
   const total = subtotal + tax
 
@@ -104,6 +191,7 @@ const CartPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-2 w-full">
       <Header />
+      <Toaster />
       
       <div className="max-w-6xl mx-auto p-4">
         {/* Page Header */}
@@ -113,21 +201,22 @@ const CartPage: React.FC = () => {
               Shopping Cart
             </h1>
             <p className="text-gray-600">
-              {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in your cart
+              {cart?.items.length || 0} {cart?.items.length === 1 ? 'item' : 'items'} in your cart
             </p>
           </div>
-          {cartItems.length > 0 && (
+          {cart?.items.length > 0 && (
             <Button 
               onClick={clearCart}
               variant="outline"
               className="text-red-600 border-red-600 hover:bg-red-50"
+              disabled={isUpdatingRef.current}
             >
               Clear Cart
             </Button>
           )}
         </div>
 
-        {cartItems.length === 0 ? (
+        {!cart || cart.items.length === 0 ? (
           /* Empty Cart */
           <div className="flex flex-col items-center justify-center py-16">
             <div className="text-center">
@@ -151,74 +240,95 @@ const CartPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <div key={item._id} className="flex gap-4 p-4 border rounded-lg">
-                  {/* Product Image */}
-                  <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.src = '/placeholder-product.jpeg'
-                      }}
-                    />
+              {cart.items.map((item: CartItem) => {
+                const isUpdating = updatingItems.has(item.medication._id)
+                
+                return (
+                  <div key={item._id} className={`flex gap-4 p-4 border rounded-lg transition-opacity ${isUpdating ? 'opacity-60' : ''}`}>
+                    {/* Product Image */}
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      <img 
+                        src={item.medication.images[0]?.url || '/placeholder-product.jpeg'} 
+                        alt={item.medication.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = '/placeholder-product.jpeg'
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="flex-grow">
+                      <h3 className="font-semibold text-[#2D3748] mb-1">
+                        {item.medication.name}
+                      </h3>
+                      <p className="text-[#3182CE] font-bold">
+                        ${item.price.toFixed(2)}
+                      </p>
+                      {item.medication.stock < 10 && item.medication.stock > 0 && (
+                        <p className="text-orange-600 text-xs mt-1">
+                          Only {item.medication.stock} left in stock
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => updateQuantity(item.medication._id, item.quantity - 1)}
+                        variant="outline"
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        disabled={isUpdating || item.quantity <= 1}
+                      >
+                        -
+                      </Button>
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleQuantityInputChange(item.medication._id, e.target.value)}
+                        className="w-16 text-center"
+                        min="1"
+                        max={item.medication.stock}
+                        disabled={isUpdating}
+                      />
+                      <Button
+                        onClick={() => updateQuantity(item.medication._id, item.quantity + 1)}
+                        variant="outline"
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        disabled={isUpdating || item.quantity >= item.medication.stock}
+                      >
+                        +
+                      </Button>
+                    </div>
+                    
+                    {/* Item Total */}
+                    <div className="text-right">
+                      <p className="font-bold text-[#2D3748]">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </p>
+                      <Button
+                        onClick={() => removeItem(item.medication._id)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-1"
+                        disabled={isUpdating}
+                      >
+                        {isUpdating ? (
+                          <div className="flex items-center gap-1">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                            <span className="text-xs">Updating...</span>
+                          </div>
+                        ) : (
+                          'Remove'
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                  
-                  {/* Product Info */}
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-[#2D3748] mb-1">
-                      {item.name}
-                    </h3>
-                    <p className="text-[#3182CE] font-bold">
-                      ${item.price.toFixed(2)}
-                    </p>
-                  </div>
-                  
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                      variant="outline"
-                      size="sm"
-                      className="w-8 h-8 p-0"
-                    >
-                      -
-                    </Button>
-                    <Input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateQuantity(item._id, parseInt(e.target.value) || 1)}
-                      className="w-16 text-center"
-                      min="1"
-                    />
-                    <Button
-                      onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                      variant="outline"
-                      size="sm"
-                      className="w-8 h-8 p-0"
-                    >
-                      +
-                    </Button>
-                  </div>
-                  
-                  {/* Item Total */}
-                  <div className="text-right">
-                    <p className="font-bold text-[#2D3748]">
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </p>
-                    <Button
-                      onClick={() => removeItem(item._id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-1"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             
             {/* Order Summary */}
@@ -246,9 +356,8 @@ const CartPage: React.FC = () => {
                 
                 <Button 
                   className="w-full mt-6 bg-[#3182CE] hover:bg-[#2C5282] text-white"
-                  onClick={() => {
-                   
-                  }}
+                  onClick={() => navigate('/checkout')}
+                  disabled={isUpdatingRef.current}
                 >
                   Proceed to Checkout
                 </Button>

@@ -5,7 +5,8 @@ import Header from "../components/Header"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
-import {toast, Toaster} from "sonner"
+import { toast, Toaster } from "sonner"
+import CartService from "../services/cartService"
 
 // Type definitions
 interface Product {
@@ -43,14 +44,6 @@ interface ProductsApiResponse {
   count: number
 }
 
-interface CartItem {
-  _id: string
-  name: string
-  price: number
-  imageUrl: string
-  quantity: number
-}
-
 const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
@@ -62,75 +55,6 @@ const CategoryPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [addingToCart, setAddingToCart] = useState<string | null>(null)
-
-  // Cart management functions
-  const getCartFromStorage = (): CartItem[] => {
-    try {
-      const cart = localStorage.getItem('cart')
-      return cart ? JSON.parse(cart) : []
-    } catch {
-      return []
-    }
-  }
-
-  const saveCartToStorage = (cart: CartItem[]): void => {
-    localStorage.setItem('cart', JSON.stringify(cart))
-    // Dispatch custom event to update cart count in header
-    window.dispatchEvent(new CustomEvent('cartUpdated', { detail: cart }))
-  }
-
-  const addToCart = async (product: Product): Promise<void> => {
-    if (product.stock <= 0) {
-            toast.message('Out of Stock', {
-        description: 'This product is currently out of stock.',
-      })
-      
-      return
-    }
-
-    setAddingToCart(product._id)
-
-    try {
-      const cart = getCartFromStorage()
-      const existingItemIndex = cart.findIndex(item => item._id === product._id)
-
-      // Get primary image URL or first image URL
-      const imageUrl = product.images?.find(img => img.isPrimary)?.url || product.images?.[0]?.url || '/placeholder-product.jpeg'
-
-      if (existingItemIndex >= 0) {
-        // Item already exists, increment quantity
-        cart[existingItemIndex].quantity += 1
-         toast.message('Quantity Updated', {
-        description: `${product.name} quantity updated in cart.`,
-      })
-      
-      } else {
-        // New item, add to cart
-        const cartItem: CartItem = {
-          _id: product._id,
-          name: product.name,
-          price: product.price,
-          imageUrl: imageUrl,
-          quantity: 1
-        }
-        cart.push(cartItem)
-          toast.message('Added to Cart', {
-        description: `${product.name} has been added to your cart.`,
-      })
-        
-      }
-
-      saveCartToStorage(cart)
-    } catch (error) {
-      console.error('Error adding to cart:', error)
-       toast.message('Error', {
-        description: `${error}`,
-      })
-      
-    } finally {
-      setAddingToCart(null)
-    }
-  }
 
   // Fetch category details
   useEffect(() => {
@@ -151,7 +75,6 @@ const CategoryPage: React.FC = () => {
       } catch (err) {
         console.error('Error fetching category:', err)
         setError('Category not found')
-        // Redirect to home after 3 seconds
         setTimeout(() => navigate('/'), 3000)
       } finally {
         setLoading(false)
@@ -177,7 +100,6 @@ const CategoryPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Error fetching products:', err)
-        // Don't set error for products, just show empty state
       } finally {
         setProductsLoading(false)
       }
@@ -197,12 +119,46 @@ const CategoryPage: React.FC = () => {
   }
 
   const handleProductClick = (productId: string, e: React.MouseEvent): void => {
-    // Prevent navigation if clicking on add to cart button
     if ((e.target as HTMLElement).closest('button')) {
       e.stopPropagation()
       return
     }
     navigate(`/product/${productId}`)
+  }
+
+  // Add to cart using CartService
+  const addToCart = async (product: Product): Promise<void> => {
+    if (product.stock <= 0) {
+      toast.message('Out of Stock', {
+        description: 'This product is currently out of stock.',
+      })
+      return
+    }
+
+    setAddingToCart(product._id)
+
+    try {
+      // Get primary image URL or first image URL
+      const imageUrl = product.images?.find(img => img.isPrimary)?.url || product.images?.[0]?.url || '/placeholder-product.jpeg'
+
+      // Use CartService to add item to cart
+      await CartService.addToCart(product._id, 1, {
+        name: product.name,
+        price: product.price,
+        imageUrl: imageUrl,
+      })
+
+      toast.message('Added to Cart', {
+        description: `${product.name} has been added to your cart.`,
+      })
+    } catch (error: any) {
+      console.error('Error adding to cart:', error)
+      toast.message('Error', {
+        description: error.message || 'Failed to add item to cart.',
+      })
+    } finally {
+      setAddingToCart(null)
+    }
   }
 
   // Loading state
@@ -248,7 +204,7 @@ const CategoryPage: React.FC = () => {
       <Toaster/>
       {/* Category Header */}
       <div className="flex flex-col justify-center items-center w-full p-4 gap-4 bg-gray-50">
-        <div className="flex flex-col items-center gap-2 max-w-4xl mx-auto text-center">
+        <div className="flex flex-col items-center gap-2 max-w-4xl mx-auto text Nadeem Ahmad text-center">
           <div className="flex items-center gap-3">
             <i className={`${category.icon} text-3xl text-[#3182CE]`}></i>
             <h1 className="font-bold text-3xl text-[#2D3748]">
