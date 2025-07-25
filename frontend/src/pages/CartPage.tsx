@@ -119,7 +119,7 @@ const CartPage: React.FC = () => {
                 return (
                   <div 
                     key={item._id} 
-                    className={`flex gap-4 p-4 border rounded-lg transition-all duration-200 ${
+                    className={`flex flex-col md:flex-row gap-4 p-4 border rounded-lg transition-all duration-200 ${
                       isItemRemoving ? 'opacity-60' : 'hover:shadow-md'
                     }`}
                   >
@@ -135,8 +135,8 @@ const CartPage: React.FC = () => {
                         }}
                       />
                     </div>
-                    
                     {/* Product Info */}
+                    <div className="flex-grow flex justify-between">     
                     <div className="flex-grow">
                       <h3 className="font-semibold text-[#2D3748] mb-1">
                         {item.medication.name}
@@ -155,7 +155,34 @@ const CartPage: React.FC = () => {
                         </p>
                       )}
                     </div>
+
+                     <div className="text-right flex md:hidden flex-col items-end gap-2">
+                      <p className="font-bold text-[#2D3748]">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </p>
+                      <Button
+                        onClick={() => removeItem(item.medication._id)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        disabled={isItemRemoving}
+                      >
+                        {isItemRemoving ? (
+                          <div className="flex items-center gap-1">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                            <span className="text-xs">Removing...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Remove
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    </div>
                     
+                    {/* Quantity Controls */}
                     {/* Quantity Controls - OPTIMIZED: No updating states */}
                     <div className="flex items-center gap-2">
                       <Button
@@ -189,7 +216,8 @@ const CartPage: React.FC = () => {
                     </div>
                     
                     {/* Item Total & Remove */}
-                    <div className="text-right flex flex-col items-end gap-2">
+                     <div className="hidden md:flex items-center gap-2">
+                        <div className="text-right flex flex-col items-end gap-2">
                       <p className="font-bold text-[#2D3748]">
                         ${(item.price * item.quantity).toFixed(2)}
                       </p>
@@ -212,6 +240,8 @@ const CartPage: React.FC = () => {
                           </>
                         )}
                       </Button>
+                    </div>
+                      
                     </div>
                   </div>
                 )
