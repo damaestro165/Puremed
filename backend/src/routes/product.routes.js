@@ -224,24 +224,211 @@ medicationRouter.get('/', async (req, res) => {
   }
 });
 
+// GET /api/medications/special/featured - Get featured medications
+medicationRouter.get('/special/featured', async (req, res) => {
+  try {
+    const medications = await Medication.find({
+      isFeatured: true,
+      isActive: true
+    })
+      .populate('category', 'name slug')
+      .limit(12);
+
+    res.json({
+      success: true,
+      data: medications
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching featured medications',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/medications/special/on-sale - Get medications on sale
+medicationRouter.get('/special/on-sale', async (req, res) => {
+  try {
+    const medications = await Medication.find({
+      isOnSale: true,
+      isActive: true
+    })
+      .populate('category', 'name slug')
+      .limit(20);
+
+    res.json({
+      success: true,
+      data: medications
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching medications on sale',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/medications/inventory/low-stock - Get low stock medications
+medicationRouter.get('/inventory/low-stock', async (req, res) => {
+  try {
+    const medications = await Medication.findLowStock();
+    res.json({
+      success: true,
+      data: medications
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching low stock medications',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/medications/inventory/expiring-soon - Get medications expiring soon
+medicationRouter.get('/inventory/expiring-soon', async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const medications = await Medication.findExpiringSoon(parseInt(days));
+    res.json({
+      success: true,
+      data: medications
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching expiring medications',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/medications/search/advanced - Advanced search
+medicationRouter.get('/search/advanced', async (req, res) => {
+  try {
+    const { q, category, dosageForm, requiresPrescription } = req.query;
+    
+    const filter = { isActive: true };
+    
+    if (q) {
+      filter.$text = { $search: q };
+    }
+    
+    if (category) filter.category = category;
+    if (dosageForm) filter.dosageForm = dosageForm;
+    if (requiresPrescription !== undefined) {
+      filter.requiresPrescription = requiresPrescription === 'true';
+    }
+
+    const medications = await Medication.find(filter)
+      .populate('category', 'name slug')
+      .limit(20);
+
+    res.json({
+      success: true,
+      data: medications
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error searching medications',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/medications/category/:categoryId - Get medications by category
+medicationRouter.get('/category/:categoryId', async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const { categoryId } = req.params;
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid category ID format'
+      });
+    }
+    
+    // Convert to ObjectId
+    const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
+    
+    const medications = await Medication.find({
+      category: categoryObjectId,
+      isActive: true
+    })
+      .populate('category', 'name slug')
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const total = await Medication.countDocuments({
+      category: categoryObjectId,
+      isActive: true
+    });
+
+    res.json({
+      success: true,
+      data: medications,
+      pagination: {
+        current: parseInt(page),
+        pages: Math.ceil(total / limit),
+        total,
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching medications by category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching medications by category',
+      error: error.message
+    });
+  }
+});
+
 // GET /api/medications/:id - Get single medication
 medicationRouter.get('/:id', async (req, res) => {
   try {
+    console.log('Received request for medication ID:', req.params.id);
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.log('Invalid ObjectId format:', req.params.id);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid medication ID format'
+      });
+    }
+    
+    console.log('Querying database for medication...');
     const medication = await Medication.findById(req.params.id)
       .populate('category', 'name slug description');
     
+    console.log('Database query result:', medication ? 'Found' : 'Not found');
+    
     if (!medication) {
+      console.log('Medication not found in database');
       return res.status(404).json({
         success: false,
         message: 'Medication not found'
       });
     }
 
+    console.log('Returning medication data');
     res.json({
       success: true,
       data: medication
     });
   } catch (error) {
+    console.error('Error in GET /api/medications/:id:', {
+      error: error.message,
+      stack: error.stack,
+      params: req.params
+    });
+    
     res.status(500).json({
       success: false,
       message: 'Error fetching medication',
@@ -250,55 +437,6 @@ medicationRouter.get('/:id', async (req, res) => {
   }
 });
 
-// GET /api/medications/category/:categoryId - Get medications by category
-medicationRouter.get('/category/:categoryId', async (req, res) => {
-    try {
-      const { page = 1, limit = 10 } = req.query;
-      const { categoryId } = req.params;
-      
-      // Validate ObjectId format
-      if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid category ID format'
-        });
-      }
-      
-      // Convert to ObjectId
-      const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
-      
-      const medications = await Medication.find({
-        category: categoryObjectId,
-        isActive: true
-      })
-        .populate('category', 'name slug')
-        .limit(parseInt(limit))
-        .skip((parseInt(page) - 1) * parseInt(limit));
-  
-      const total = await Medication.countDocuments({
-        category: categoryObjectId,
-        isActive: true
-      });
-  
-      res.json({
-        success: true,
-        data: medications,
-        pagination: {
-          current: parseInt(page),
-          pages: Math.ceil(total / limit),
-          total,
-          limit: parseInt(limit)
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching medications by category:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error fetching medications by category',
-        error: error.message
-      });
-    }
-  });
 // POST /api/medications - Create new medication
 medicationRouter.post('/', async (req, res) => {
   try {
@@ -379,87 +517,6 @@ medicationRouter.delete('/:id', async (req, res) => {
   }
 });
 
-// GET /api/medications/featured - Get featured medications
-medicationRouter.get('/special/featured', async (req, res) => {
-  try {
-    const medications = await Medication.find({
-      isFeatured: true,
-      isActive: true
-    })
-      .populate('category', 'name slug')
-      .limit(12);
-
-    res.json({
-      success: true,
-      data: medications
-    });
-  } catch (error) {
-    res.status(500).json({
-    //   success: false,
-      message: 'Error fetching featured medications',
-      error: error.message
-    });
-  }
-});
-
-// GET /api/medications/on-sale - Get medications on sale
-medicationRouter.get('/special/on-sale', async (req, res) => {
-  try {
-    const medications = await Medication.find({
-      isOnSale: true,
-      isActive: true
-    })
-      .populate('category', 'name slug')
-      .limit(20);
-
-    res.json({
-      success: true,
-      data: medications
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching medications on sale',
-      error: error.message
-    });
-  }
-});
-
-// GET /api/medications/inventory/low-stock - Get low stock medications
-medicationRouter.get('/inventory/low-stock', async (req, res) => {
-  try {
-    const medications = await Medication.findLowStock();
-    res.json({
-      success: true,
-      data: medications
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching low stock medications',
-      error: error.message
-    });
-  }
-});
-
-// GET /api/medications/inventory/expiring-soon - Get medications expiring soon
-medicationRouter.get('/inventory/expiring-soon', async (req, res) => {
-  try {
-    const { days = 30 } = req.query;
-    const medications = await Medication.findExpiringSoon(parseInt(days));
-    res.json({
-      success: true,
-      data: medications
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching expiring medications',
-      error: error.message
-    });
-  }
-});
-
 // PUT /api/medications/:id/stock - Update medication stock
 medicationRouter.put('/:id/stock', async (req, res) => {
   try {
@@ -495,40 +552,6 @@ medicationRouter.put('/:id/stock', async (req, res) => {
     res.status(400).json({
       success: false,
       message: 'Error updating stock',
-      error: error.message
-    });
-  }
-});
-
-// GET /api/medications/search - Advanced search
-medicationRouter.get('/search/advanced', async (req, res) => {
-  try {
-    const { q, category, dosageForm, requiresPrescription } = req.query;
-    
-    const filter = { isActive: true };
-    
-    if (q) {
-      filter.$text = { $search: q };
-    }
-    
-    if (category) filter.category = category;
-    if (dosageForm) filter.dosageForm = dosageForm;
-    if (requiresPrescription !== undefined) {
-      filter.requiresPrescription = requiresPrescription === 'true';
-    }
-
-    const medications = await Medication.find(filter)
-      .populate('category', 'name slug')
-      .limit(20);
-
-    res.json({
-      success: true,
-      data: medications
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error searching medications',
       error: error.message
     });
   }

@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { categoryRouter, medicationRouter } from "./routes/product.routes.js";
 import  cartRouter  from "./routes/cart.routes.js";
+import prescriptionRouter from './routes/prescription.routes.js';
 
 
 const app = express();
@@ -51,7 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRouter); 
 app.use('/api/medications', medicationRouter); // Serve static files from 'public/products'
 app.use('/api/cart', cartRouter);
-
+app.use('/api/prescription', prescriptionRouter);
 
 const PORT = process.env.PORT|| 8080;
 

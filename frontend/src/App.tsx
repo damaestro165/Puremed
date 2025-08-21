@@ -8,7 +8,8 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import CategoryPage from './pages/CategoryPage';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
- 
+import PrescriptionPage from './pages/PrescriptionPage';
+
 function App() {
   return (
     <BrowserRouter>
@@ -20,6 +21,7 @@ function App() {
         <Route path="/auth/callback" element={<GoogleCallback />} />
         <Route path="/category/:slug" element={<CategoryPage />} />
         <Route path="/product/:slug" element={<ProductPage />} />
+        <Route path="/prescription" element={<PrescriptionPage />} />
         {/* Protected routes */}
         <Route
           path="/dashboard"
