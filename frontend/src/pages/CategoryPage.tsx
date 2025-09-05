@@ -4,10 +4,10 @@ import axios from "axios"
 import Header from "../components/Header"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
+
 import { Toaster } from "sonner"
 import { useCartStore } from "../stores/cartStore"
-import { ShoppingCart, Search, Package, Filter, Grid3X3, List, SlidersHorizontal, Heart, ArrowRight } from "lucide-react"
+import { ShoppingCart, Search, Package, Grid3X3, List, SlidersHorizontal, Heart, } from "lucide-react"
 
 // Type definitions
 interface Product {
@@ -67,57 +67,58 @@ const CategoryPage: React.FC = () => {
   } = useCartStore()
 
   // Fetch category details
-  useEffect(() => {
-    const fetchCategory = async (): Promise<void> => {
-      if (!slug) return
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await axios.get<CategoryApiResponse>(
-          `http://localhost:8080/api/categories/slug/${slug}`
-        )
-        
-        if (response.data.success && response.data.data) {
-          setCategory(response.data.data)
-        } else {
-          throw new Error('Category not found')
-        }
-      } catch (err) {
-        console.error('Error fetching category:', err)
-        setError('Category not found')
-        setTimeout(() => navigate('/'), 3000)
-      } finally {
-        setLoading(false)
+ // Fetch category details
+// Fetch category details
+useEffect(() => {
+  const fetchCategory = async (): Promise<void> => {
+    if (!slug) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get<CategoryApiResponse>(
+        `${import.meta.env.VITE_BACKEND_URL}/api/categories/slug/${slug}`
+      );
+
+      if (response.data.success && response.data.data) {
+        setCategory(response.data.data);
+      } else {
+        throw new Error('Category not found');
       }
+    } catch (err) {
+      console.error('Error fetching category:', err);
+      setError('Category not found');
+      setTimeout(() => navigate('/'), 3000);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    fetchCategory()
-  }, [slug, navigate])
+  fetchCategory();
+}, [slug, navigate]);
 
-  // Fetch products for this category
-  useEffect(() => {
-    const fetchProducts = async (): Promise<void> => {
-      if (!category?._id) return
+// Fetch products for this category
+useEffect(() => {
+  const fetchProducts = async (): Promise<void> => {
+    if (!category?._id) return;
 
-      try {
-        setProductsLoading(true)
-        const response = await axios.get<ProductsApiResponse>(
-          `http://localhost:8080/api/medications/category/${category._id}`
-        )
-        
-        if (response.data.success && response.data.data) {
-          setProducts(response.data.data)
-        }
-      } catch (err) {
-        console.error('Error fetching products:', err)
-      } finally {
-        setProductsLoading(false)
+    try {
+      setProductsLoading(true);
+      const response = await axios.get<ProductsApiResponse>(
+        `${import.meta.env.VITE_BACKEND_URL}/api/medications/category/${category._id}`
+      );
+
+      if (response.data.success && response.data.data) {
+        setProducts(response.data.data);
       }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    } finally {
+      setProductsLoading(false);
     }
+  };
 
-    fetchProducts()
-  }, [category])
-
+  fetchProducts();
+}, [category]);
   // Filter and sort products
   const filteredAndSortedProducts = products
     .filter(product =>

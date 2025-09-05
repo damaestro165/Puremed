@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { categoryRouter, medicationRouter } from "./routes/product.routes.js";
 import  cartRouter  from "./routes/cart.routes.js";
+import chatRoutes from './routes/chat.routes.js';
 import prescriptionRouter from './routes/prescription.routes.js';
 
 
@@ -47,12 +48,16 @@ app.use(cors({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRouter); 
 app.use('/api/medications', medicationRouter); // Serve static files from 'public/products'
 app.use('/api/cart', cartRouter);
+app.use('/api/chats', chatRoutes);
 app.use('/api/prescription', prescriptionRouter);
+
 
 const PORT = process.env.PORT|| 8080;
 

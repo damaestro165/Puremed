@@ -76,7 +76,7 @@ const ProductPage: React.FC = () => {
         setLoading(true)
         setError(null)
         const response = await axios.get<ProductApiResponse>(
-          `http://localhost:8080/api/medications/${productId}`
+          `${import.meta.env.VITE_BACKEND_URL}/api/medications/${productId}`
         )
         
         if (response.data.success && response.data.data) {

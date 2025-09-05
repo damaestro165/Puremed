@@ -224,6 +224,52 @@ medicationRouter.get('/', async (req, res) => {
   }
 });
 
+// GET /api/medications/search - Simple search endpoint for homepage
+medicationRouter.get('/search', async (req, res) => {
+  try {
+    const { q, limit = 10 } = req.query;
+    
+    if (!q || q.trim().length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        count: 0
+      });
+    }
+
+    const searchQuery = q.trim();
+    
+    // Create search filter
+    const filter = {
+      isActive: true,
+      $or: [
+        { name: { $regex: searchQuery, $options: 'i' } },
+        { genericName: { $regex: searchQuery, $options: 'i' } },
+        { brandName: { $regex: searchQuery, $options: 'i' } },
+        { description: { $regex: searchQuery, $options: 'i' } }
+      ]
+    };
+
+    const medications = await Medication.find(filter)
+      .populate('category', 'name slug')
+      .limit(parseInt(limit))
+      .sort({ name: 1 });
+
+    res.json({
+      success: true,
+      data: medications,
+      count: medications.length
+    });
+  } catch (error) {
+    console.error('Error in search endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error searching medications',
+      error: error.message
+    });
+  }
+});
+
 // GET /api/medications/special/featured - Get featured medications
 medicationRouter.get('/special/featured', async (req, res) => {
   try {

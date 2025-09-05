@@ -2,12 +2,12 @@ import CategoryCard from "./CategoryCard"
 import { cloneElement } from "react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
-import ChatModal from "./ChatModal"
 import { useEffect, useState } from "react"
 import Header from "./Header"
 import axios from "axios"
-import { Search, Stethoscope, Shield, Truck, Clock, Star, Users, Award } from "lucide-react"
+import { Search, Stethoscope, Shield, Truck, Clock, Star, Users, Award, Upload, FileText } from "lucide-react"
 import Footer from "./Footer"
+import { useNavigate } from "react-router-dom"
 
 // Type definitions
 interface Category {
@@ -28,11 +28,38 @@ interface ApiResponse {
   count: number
 }
 
+interface Product {
+  _id: string
+  name: string
+  description: string
+  price: number
+  images: Array<{
+    url: string
+    alt: string
+    isPrimary: boolean
+  }>
+  stock: number
+  categoryId: string
+}
+
+interface ProductsApiResponse {
+  success: boolean
+  data: Product[]
+  count: number
+}
+
 const Home: React.FC = () => {
   const [isMobile, setIsMobile] = useState<boolean>(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [searchResults, setSearchResults] = useState<Product[]>([])
+  const [isSearching, setIsSearching] = useState<boolean>(false)
+  const [showResults, setShowResults] = useState<boolean>(false)
+  
+  const navigate = useNavigate()
+   const Category_Url = import.meta.env.VITE_BACKEND_URL+'/api/categories'
 
   useEffect(() => {
     const checkMobile = (): void => {
@@ -56,13 +83,15 @@ const Home: React.FC = () => {
     return imageMap[categoryName] || '/default-category.jpeg'
   }
 
+
+
   // Fetch categories from API
   useEffect(() => {
     const fetchCategories = async (): Promise<void> => {
       try {
         setLoading(true)
         setError(null)
-        const response = await axios.get<ApiResponse>('http://localhost:8080/api/categories')
+        const response = await axios.get<ApiResponse>(Category_Url)
         
         if (response.data.success && response.data.data) {
           const activeCategories: Category[] = response.data.data
@@ -86,6 +115,74 @@ const Home: React.FC = () => {
 
     fetchCategories()
   }, [])
+
+  // Search functionality
+ const searchProducts = async (query: string): Promise<void> => {
+  if (!query.trim()) {
+    setSearchResults([]);
+    setShowResults(false);
+    return;
+  }
+
+  try {
+    setIsSearching(true);
+    const response = await axios.get<ProductsApiResponse>(
+      `${import.meta.env.VITE_BACKEND_URL}/api/medications/search?q=${encodeURIComponent(query.trim())}`
+    );
+
+    if (response.data.success && response.data.data) {
+      setSearchResults(response.data.data);
+      setShowResults(true);
+    } else {
+      setSearchResults([]);
+      setShowResults(true);
+    }
+  } catch (err) {
+    console.error('Error searching products:', err);
+    setSearchResults([]);
+    setShowResults(true);
+  } finally {
+    setIsSearching(false);
+  }
+};
+
+  // Handle search input change with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery) {
+        searchProducts(searchQuery)
+      } else {
+        setShowResults(false)
+        setSearchResults([])
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery])
+
+  // Handle search form submission
+  const handleSearchSubmit = (e: React.FormEvent): void => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      // Navigate to a search results page or show results inline
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
+  // Handle clicking on a search result
+  const handleProductClick = (productId: string): void => {
+    navigate(`/product/${productId}`)
+    setShowResults(false)
+    setSearchQuery("")
+  }
+
+  // Close search results when clicking outside
+  const handleSearchBlur = (): void => {
+    // Add a small delay to allow clicking on results
+    setTimeout(() => {
+      setShowResults(false)
+    }, 200)
+  }
 
   const features = [
     {
@@ -142,19 +239,41 @@ const Home: React.FC = () => {
               Browse and buy medications with confidence. Get professional medical advice through our doctor chat service, available 24/7.
             </p>
             
-            {isMobile ? (
-              <Button className=" flex bg-gradient-to-r from-[#3182CE] to-blue-600 hover:from-[#2C5282] hover:to-blue-700 text-white text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300">
-                <Stethoscope className="w-5 h-5 mr-2" />
-                Chat with Doctor
-              </Button>
-            ) : (
-              <ChatModal>
-                <Button className="bg-gradient-to-r from-[#3182CE] to-blue-600 hover:from-[#2C5282] hover:to-blue-700 text-white px-14 py-3 text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300">
-                  <Stethoscope className="w-5 h-5 mr-2" />
-                  Chat with Doctor
-                </Button>
-              </ChatModal>
-            )}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {isMobile ? (
+                <>
+                  <Button className="w-full sm:w-auto bg-gradient-to-r from-[#3182CE] to-blue-600 hover:from-[#2C5282] hover:to-blue-700 text-white text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 px-8 py-4">
+                    <a href="/chat" className="flex items-center justify-center gap-2">
+                      <Stethoscope className="w-5 h-5" />
+                      Chat with Doctor
+                    </a>
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/prescription')}
+                    className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 px-8 py-4"
+                  >
+                    <Upload className="w-5 h-5 mr-2" />
+                    Upload Prescription
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button className="bg-gradient-to-r from-[#3182CE] to-blue-600 hover:from-[#2C5282] hover:to-blue-700 text-white px-8 py-5 text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <a href="/chat" className="flex items-center justify-center gap-2">
+                      <Stethoscope className="w-5 h-5" />
+                      Chat with Doctor
+                    </a>
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/prescription')}
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-5 text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300"
+                  >
+                    <Upload className="w-5 h-5 mr-2" />
+                    Upload Prescription
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
         
@@ -192,16 +311,108 @@ const Home: React.FC = () => {
             Find medications, health products, and wellness solutions quickly and easily
           </p>
           
-          <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              className="w-full px-14 py-7 text-sm lg:text-lg border-0 bg-white shadow-xl rounded-2xl focus:ring-2 focus:ring-[#3182CE]/20"
-              placeholder="Search for medications, health products, and more..."
-            />
-            <Button className="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-[#3182CE] to-blue-600 text-white px-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200">
-              Search
-            </Button>
-          </div>
+          <form onSubmit={handleSearchSubmit} className="relative max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                className="w-full px-14 py-7 text-sm lg:text-lg border-0 bg-white shadow-xl rounded-2xl focus:ring-2 focus:ring-[#3182CE]/20"
+                placeholder="Search for medications, health products, and more..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onBlur={handleSearchBlur}
+                onFocus={() => searchQuery && setShowResults(true)}
+              />
+              <Button 
+                type="submit"
+                className="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-[#3182CE] to-blue-600 text-white px-6 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                disabled={isSearching}
+              >
+                {isSearching ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : (
+                  "Search"
+                )}
+              </Button>
+            </div>
+            
+            {/* Search Results Dropdown */}
+            {showResults && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-50">
+                {isSearching ? (
+                  <div className="p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3182CE] mx-auto mb-4"></div>
+                    <p className="text-gray-600">Searching...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    <div className="px-6 py-4 border-b border-gray-100">
+                      <p className="text-sm text-gray-600 font-medium">
+                        Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
+                      </p>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {searchResults.map((product) => (
+                        <div
+                          key={product._id}
+                          onClick={() => handleProductClick(product._id)}
+                          className="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0 transition-colors"
+                        >
+                          <img
+                            src={product.images?.find(img => img.isPrimary)?.url || 
+                                  product.images?.[0]?.url || 
+                                  '/placeholder-product.jpeg'}
+                            alt={product.name}
+                            className="w-12 h-12 object-cover rounded-lg bg-gray-100"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = '/placeholder-product.jpeg'
+                            }}
+                          />
+                          <div className="flex-1 text-left">
+                            <h3 className="font-semibold text-[#2D3748] text-sm line-clamp-1">
+                              {product.name}
+                            </h3>
+                            <p className="text-xs text-gray-600 line-clamp-1 mt-1">
+                              {product.description}
+                            </p>
+                            <p className="text-sm font-bold text-[#3182CE] mt-1">
+                              ${product.price.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {product.stock > 0 ? (
+                              <span className="text-green-600 font-medium">In Stock</span>
+                            ) : (
+                              <span className="text-red-600 font-medium">Out of Stock</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {searchResults.length > 5 && (
+                      <div className="p-4 border-t border-gray-100 text-center">
+                        <Button
+                          onClick={() => navigate(`/search?q=${encodeURIComponent(searchQuery)}`)}
+                          variant="outline"
+                          className="text-[#3182CE] border-[#3182CE] hover:bg-[#3182CE] hover:text-white"
+                        >
+                          View All Results
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : searchQuery ? (
+                  <div className="p-8 text-center">
+                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="font-semibold text-gray-600 mb-2">No products found</h3>
+                    <p className="text-sm text-gray-500">
+                      No results found for "{searchQuery}". Try different keywords or check the spelling.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </form>
         </div>
       </section>
 
@@ -282,6 +493,5 @@ const Home: React.FC = () => {
     </div>
   )
 }
-
 
 export default Home

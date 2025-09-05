@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 
-const API_URL = 'http://localhost:8080/api/auth';
+const API_URL=import.meta.env.VITE_BACKEND_URL+'/api/auth';
 
 export interface RegisterData {
     email: string;

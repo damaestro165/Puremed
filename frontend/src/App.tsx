@@ -9,6 +9,7 @@ import CategoryPage from './pages/CategoryPage';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import PrescriptionPage from './pages/PrescriptionPage';
+import ChatPage from './pages/Chatpage';
 
 function App() {
   return (
@@ -36,19 +37,11 @@ function App() {
           element={
             <ProtectedRoute>
               {/* Add your chat component here */}
-              <div>Chat Component</div>
+              <ChatPage />
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/doctor"
-          element={
-            <ProtectedRoute>
-              {/* Add your doctor consultation component here */}
-              <div>Doctor Consultation Component</div>
-            </ProtectedRoute>
-          }
-        />
+      
         <Route
           path="/cart"
           element={
