@@ -525,7 +525,7 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-full lg:h-screen bg-gray-50">
       {/* Desktop Sidebar */}
       <div className={`hidden lg:flex flex-col transition-all duration-300 ${
         sidebarCollapsed ? 'w-16' : 'w-80'
@@ -811,7 +811,7 @@ const ChatPage = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/50 relative overflow-hidden">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/50 relative overflow-y-scroll custom-scrollbar lg:overflow-hidden">
             {/* Background decoration */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
@@ -835,7 +835,7 @@ const ChatPage = () => {
               {sidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
             </Button>
             
-            <div className="relative z-10 flex flex-col items-center">
+            <div className="relative z-10  flex flex-col items-center">
               <div className="w-32 h-32 bg-gradient-to-br from-[#3182CE] via-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-2xl transform hover:rotate-3 transition-transform duration-300">
                 <MessageSquare className="h-16 w-16 text-white" />
                 <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center animate-pulse">
