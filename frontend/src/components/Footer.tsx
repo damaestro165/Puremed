@@ -13,7 +13,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="space-y-6">
             <div>
-              <img src="/logo-white.svg" alt="Logo" className="w-40 mb-4" />
+              <img src="/logo.svg" alt="Logo" className="w-40 mb-4" />
               <p className="text-gray-300 leading-relaxed">
                 Your trusted online pharmacy providing quality medications and professional healthcare services.
               </p>
