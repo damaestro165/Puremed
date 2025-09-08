@@ -408,19 +408,19 @@ const searchMedications = async (medications: Medication[]) => {
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">
                   Upload Prescription
                 </h3>
-                <p className="text-gray-600 text-lg mb-6 max-w-md">
+                <p className="text-gray-600 text-sm lg:text-lg mb-6 max-w-md">
                   Drag and drop your prescription images here, or click to browse. Supports JPEG, PNG, WebP up to 10MB each.
                 </p>
                 <div className="flex gap-4">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                    className="bg-blue-600 text-white text-sm lg:text-lg px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                   >
                     Browse Files
                   </button>
                   <button
                     onClick={startCamera}
-                    className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center gap-2"
+                    className="bg-green-600 text-white text-sm md:text-md px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center gap-2"
                   >
                     <Camera className="w-5 h-5" />
                     Use Camera

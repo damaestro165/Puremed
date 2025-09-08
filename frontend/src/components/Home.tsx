@@ -242,20 +242,15 @@ const Home: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               {isMobile ? (
                 <>
-                  {/* <Button className="w-full sm:w-auto bg-gradient-to-r from-[#3182CE] to-blue-600 hover:from-[#2C5282] hover:to-blue-700 text-white text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 px-8 py-4">
-                    <a href="/chat" className="flex items-center justify-center gap-2">
-                      <Stethoscope className="w-5 h-5" />
-                      Chat with Doctor
-                    </a>
-                  </Button> */}
+                  
                    <Button 
                     onClick={() => navigate('/chat')}
                     className="w-full sm:w-auto bg-gradient-to-r from-[#3182CE] to-blue-600 hover:from-[#2C5282] hover:to-blue-700 text-white text-lg rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 px-8 py-4"
                   >
-                    <a href="/chat" className="flex items-center justify-center gap-2">
+                    
                       <Stethoscope className="w-5 h-5" />
                       Chat with Doctor
-                    </a>
+                  
                   </Button>
                   <Button 
                     onClick={() => navigate('/prescription')}
@@ -288,8 +283,7 @@ const Home: React.FC = () => {
         </div>
         
         {/* Decorative elements */}
-        <div className="absolute top-20 left-10 w-32 h-32 bg-[#3182CE]/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-purple-400/10 rounded-full blur-3xl"></div>
+       
       </section>
 
       {/* Stats Section */}
