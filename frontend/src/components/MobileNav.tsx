@@ -49,7 +49,7 @@ const MobileNav = () => {
     {
       icon: <Grid3X3 className="w-5 h-5" />,
       label: "Categories",
-      action: () => navigate('/categories'),
+      action: () => navigate('/home'),
       show: true
     },
     {
