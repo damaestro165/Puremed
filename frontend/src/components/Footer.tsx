@@ -1,133 +1,97 @@
-
-import { Link } from 'react-router-dom'
-import {  Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react'
+import { Link } from "react-router-dom"
+import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Twitter } from "lucide-react"
 
 const Footer = () => {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-gradient-to-br from-[#2D3748] to-gray-800 text-white mt-16">
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {/* Company Info */}
-          <div className="space-y-6">
-            <div>
-              <img src="/logo.svg" alt="Logo" className="w-40 mb-4" />
-              <p className="text-gray-300 leading-relaxed">
-                Your trusted online pharmacy providing quality medications and professional healthcare services.
-              </p>
-            </div>
-            <div className="flex space-x-4">
-              <a href="#" className="bg-[#3182CE] p-2 rounded-lg hover:bg-blue-600 transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="bg-[#3182CE] p-2 rounded-lg hover:bg-blue-600 transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="bg-[#3182CE] p-2 rounded-lg hover:bg-blue-600 transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="bg-[#3182CE] p-2 rounded-lg hover:bg-blue-600 transition-colors">
-                <Linkedin className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div className="space-y-6">
-            <h3 className="text-xl font-bold">Quick Links</h3>
-            <ul className="space-y-3">
-              {['About Us', 'Our Services', 'Categories', 'Contact'].map((item) => (
-                <li key={item}>
-                  <Link 
-                    to="#" 
-                    className="text-gray-300 hover:text-[#3182CE] transition-colors font-medium"
-                  >
-                    {item}
-                  </Link>
-                </li>
+    <footer className="mt-16 bg-[linear-gradient(180deg,#13315c_0%,#0f2442_100%)] text-white">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.75fr_0.75fr_0.95fr_1fr]">
+          <div>
+            <img src="/logo.svg" alt="Puremed" className="mb-5 w-40 brightness-[1.65] saturate-0 invert" />
+            <p className="max-w-xs text-sm leading-7 text-blue-100/85">
+              Your trusted online pharmacy providing quality medications and professional healthcare services.
+            </p>
+            <div className="mt-6 flex gap-3">
+              {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
+                <a
+                  key={index}
+                  href="#"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#2563eb]"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
               ))}
-            </ul>
+            </div>
           </div>
 
-          {/* Services */}
-          <div className="space-y-6">
-            <h3 className="text-xl font-bold">Services</h3>
-            <ul className="space-y-3">
-              {['Doctor Consultation', 'Prescription Upload', 'Home Delivery', 'Health Tips'].map((item) => (
-                <li key={item}>
-                  <Link 
-                    to="#" 
-                    className="text-gray-300 hover:text-[#3182CE] transition-colors font-medium"
-                  >
-                    {item}
-                  </Link>
-                </li>
+          <div>
+            <h3 className="text-lg font-semibold">Quick Links</h3>
+            <div className="mt-5 space-y-3 text-sm text-blue-100/85">
+              {["About Us", "Our Services", "Categories", "Contact"].map((item) => (
+                <Link key={item} to="#" className="block transition hover:text-white">
+                  {item}
+                </Link>
               ))}
-            </ul>
+            </div>
           </div>
 
-          {/* Contact Info */}
-          <div className="space-y-6">
-            <h3 className="text-xl font-bold">Contact Info</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-[#3182CE] p-2 rounded-lg">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <span className="text-gray-300">+1 (555) 123-4567</span>
+          <div>
+            <h3 className="text-lg font-semibold">Services</h3>
+            <div className="mt-5 space-y-3 text-sm text-blue-100/85">
+              {["Doctor Consultation", "Prescription Upload", "Home Delivery", "Health Tips"].map((item) => (
+                <Link key={item} to="#" className="block transition hover:text-white">
+                  {item}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold">Contact Info</h3>
+            <div className="mt-5 space-y-4 text-sm text-blue-100/85">
+              <div className="flex items-start gap-3">
+                <Phone className="mt-0.5 h-4 w-4 text-blue-300" />
+                <span>+1 (555) 123-4567</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="bg-[#3182CE] p-2 rounded-lg">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <span className="text-gray-300">support@pharmacy.com</span>
+              <div className="flex items-start gap-3">
+                <Mail className="mt-0.5 h-4 w-4 text-blue-300" />
+                <span>support@puremed.com</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="bg-[#3182CE] p-2 rounded-lg">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <span className="text-gray-300">123 Health Street, Medical City</span>
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-4 w-4 text-blue-300" />
+                <span>123 Health Street, Medical City</span>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Newsletter Section */}
-        <div className="bg-gradient-to-r from-[#3182CE] to-blue-600 rounded-2xl p-8 mb-12">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-4">Stay Updated</h3>
-            <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur">
+            <h3 className="text-xl font-semibold">Stay Updated</h3>
+            <p className="mt-3 text-sm leading-7 text-blue-100/85">
               Subscribe to our newsletter for health tips, special offers, and latest updates.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <div className="mt-5 space-y-3">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-xl text-amber-50 border-2 border-amber-50 focus:ring-2 focus:ring-blue-300"
+                className="h-12 w-full rounded-2xl border border-white/10 bg-[#102645] px-4 text-sm text-white placeholder:text-blue-200/50 focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
               />
-              <button className="bg-white text-[#3182CE] px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors">
+              <button className="h-12 w-full rounded-2xl bg-[#2563eb] text-sm font-semibold text-white transition hover:bg-[#1d4ed8]">
                 Subscribe
               </button>
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-600 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-gray-400 text-sm">
-              © {currentYear} Your Pharmacy. All rights reserved.
-            </div>
-            <div className="flex items-center gap-1 text-gray-400 text-sm">
-              Made by @yomidev for better health
-            </div>
-            <div className="flex gap-6 text-sm">
-              <Link to="#" className="text-gray-400 hover:text-[#3182CE] transition-colors">
+        <div className="mt-10 border-t border-white/10 pt-6">
+          <div className="flex flex-col gap-3 text-sm text-blue-100/70 md:flex-row md:items-center md:justify-between">
+            <span>&copy; {currentYear} Puremed. All rights reserved.</span>
+            <div className="flex gap-6">
+              <Link to="#" className="transition hover:text-white">
                 Privacy Policy
               </Link>
-              <Link to="#" className="text-gray-400 hover:text-[#3182CE] transition-colors">
+              <Link to="#" className="transition hover:text-white">
                 Terms of Service
               </Link>
             </div>

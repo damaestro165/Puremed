@@ -26,6 +26,12 @@ interface ExtractedPrescriptionData {
   }>;
 }
 
+async function runLocalPrescriptionOcr(file: File): Promise<string> {
+  const { recognize } = await import('tesseract.js');
+  const result = await recognize(file, 'eng');
+  return result.data.text || '';
+}
+
 interface PrescriptionUploadProps {
   onPrescriptionProcessed: (data: ExtractedPrescriptionData) => void;
 }
@@ -41,6 +47,23 @@ const PrescriptionUpload: React.FC<PrescriptionUploadProps> = ({ onPrescriptionP
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showCamera, setShowCamera] = useState(false);
+
+  const processExtractedText = async (rawText: string): Promise<ExtractedPrescriptionData> => {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/prescription/process`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ rawText }),
+    });
+
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(() => null);
+      throw new Error(errorPayload?.message || 'Failed to parse OCR text');
+    }
+
+    return response.json();
+  };
 
   // Enhanced file validation
   const validateFile = (file: File): string | null => {
@@ -173,13 +196,29 @@ const processPrescriptions = async () => {
         method: 'POST',
         body: formData,
       });
+      let result: ExtractedPrescriptionData;
 
       if (!response.ok) {
         const errorPayload = await response.json().catch(() => null);
-        throw new Error(errorPayload?.message || 'Processing failed');
-      }
+        const serverMessage = errorPayload?.message || 'Processing failed';
+        console.warn('Prescription AI processing failed, falling back to local OCR:', serverMessage);
 
-      const result: ExtractedPrescriptionData = await response.json();
+        const rawText = await runLocalPrescriptionOcr(file);
+        if (!rawText.trim()) {
+          throw new Error(serverMessage);
+        }
+
+        result = await processExtractedText(rawText);
+        result.recommendations = [
+          ...(result.recommendations || []),
+          {
+            type: 'info',
+            message: 'Cloud prescription AI was unavailable, so this result was extracted with local OCR in your browser. Please review it carefully before adding medications to cart.',
+          },
+        ];
+      } else {
+        result = await response.json();
+      }
 
       if (result) {
         setLastResult(result);

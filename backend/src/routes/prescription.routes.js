@@ -9,6 +9,17 @@ const upload = multer({ dest: "uploads/" });
 const cache = new Map();
 const REQUEST_TIMEOUT_MS = 20000;
 
+function buildParsedPrescriptionResponse(structuredData, extractedText = "", processingTime = 0, cached = false) {
+  const normalizedData = normalizeStructuredData(structuredData, extractedText);
+
+  return {
+    success: true,
+    ...normalizedData,
+    processingTime,
+    cached,
+  };
+}
+
 // Hugging Face Query Function
 async function query(data) {
   const controller = new AbortController();
@@ -101,6 +112,26 @@ function extractMedications(rawText) {
 router.post("/process", upload.single("file"), async (req, res) => {
   const startTime = Date.now();
 
+  if (req.body?.rawText && typeof req.body.rawText === "string" && req.body.rawText.trim()) {
+    const rawText = req.body.rawText.trim();
+    const meds = extractMedications(rawText);
+    const responsePayload = buildParsedPrescriptionResponse(
+      {
+        patientName: null,
+        doctorName: null,
+        date: null,
+        medications: meds,
+        rawText,
+        confidence: meds.length > 0 ? 0.65 : 0.25,
+      },
+      rawText,
+      Date.now() - startTime,
+      false
+    );
+
+    return res.json(responsePayload);
+  }
+
   if (!req.file) {
     return res.status(400).json({ success: false, message: "No file uploaded" });
   }
@@ -164,16 +195,17 @@ router.post("/process", upload.single("file"), async (req, res) => {
       };
     }
 
-    // Cache result
-    const normalizedData = normalizeStructuredData(structuredData, extractedText);
-    cache.set(hash, normalizedData);
-
-    res.json({
-      success: true,
-      ...normalizedData,
-      processingTime: Date.now() - startTime,
-      cached: false,
+    const responsePayload = buildParsedPrescriptionResponse(structuredData, extractedText, Date.now() - startTime, false);
+    cache.set(hash, {
+      patientName: responsePayload.patientName,
+      doctorName: responsePayload.doctorName,
+      date: responsePayload.date,
+      medications: responsePayload.medications,
+      rawText: responsePayload.rawText,
+      confidence: responsePayload.confidence,
     });
+
+    res.json(responsePayload);
   } catch (err) {
     console.error("Processing error:", err);
     res.status(500).json({

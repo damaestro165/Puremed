@@ -1,7 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom'
-import {  useEffect } from 'react'
-import { Button } from './ui/button'
-import { MessageCircle, ShoppingCart, User, LogOut} from 'lucide-react'
+import { Link, useNavigate } from "react-router-dom"
+import { useEffect } from "react"
+import { Button } from "./ui/button"
+import { ChevronDown, LogOut, MessageCircle, ShoppingCart, User } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,20 +10,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import authService from '../services/auth.service'
-import { useCartStore } from '@/stores/cartStore'
-
+import authService from "../services/auth.service"
+import { useCartStore } from "@/stores/cartStore"
 
 const DesktopNav = () => {
   const navigate = useNavigate()
   const isAuthenticated = authService.isAuthenticated()
   const user = authService.getCurrentUser()
-
-  // Cart state
   const { cart, getCartItemsCount, initializeCart } = useCartStore()
   const itemsCount = getCartItemsCount()
 
-  // Initialize cart when component mounts and user is authenticated
   useEffect(() => {
     if (isAuthenticated && !cart) {
       initializeCart()
@@ -32,135 +28,136 @@ const DesktopNav = () => {
 
   const handleProtectedAction = (action: string) => {
     if (!isAuthenticated) {
-      navigate('/login')
+      navigate("/login")
     } else {
-        navigate(`/${action}`)
+      navigate(`/${action}`)
     }
   }
 
   const handleLogout = () => {
     authService.logout()
-    navigate('/')
+    navigate("/")
     window.location.reload()
   }
 
+  const navItems = [
+    { label: "Medicines", action: () => navigate("/search?q=medicine") },
+    { label: "Health Products", action: () => navigate("/search?q=health") },
+    { label: "Health Tips", action: () => navigate("/prescription") },
+    { label: "Consult a Doctor", action: () => handleProtectedAction("chat") },
+  ]
 
   return (
-    <>
-      <div className="hidden lg:flex justify-between items-center w-full">
-        {/* Logo */}
-        <Link to="/" className="flex-shrink-0 group">
-          <img 
-            src="/logo.svg" 
-            alt="Logo" 
-            className="w-40 group-hover:scale-105 transition-transform duration-200" 
-          />
-        </Link>
+    <div className="hidden w-full items-center justify-between gap-8 lg:flex">
+      <Link to="/" className="flex-shrink-0 group">
+        <img src="/logo.svg" alt="Logo" className="w-40 transition-transform duration-200 group-hover:scale-105" />
+      </Link>
 
-        {/* Navigation Items */}
-        <div className="flex items-center gap-2">
-          {/* Chat Button */}
-          <Button
-            onClick={() => handleProtectedAction('chat')}
-            variant="ghost"
-            className="flex items-center gap-3 text-gray-700 hover:text-[#3182CE] hover:bg-blue-50 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105"
-          >
-            <div className="p-1.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-              <MessageCircle className="w-4 h-4" />
-            </div>
-            <span>Chat</span>
-          </Button>
+      <div className="flex items-center gap-7 text-sm font-medium text-slate-700">
+        {navItems.map((item) => (
+          <button key={item.label} onClick={item.action} className="transition hover:text-[#2563eb]">
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-          {/* Cart Button with Enhanced Counter */}
-          <Button
-            onClick={() => handleProtectedAction('cart')}
-            variant="ghost"
-            className="flex items-center gap-3 text-gray-700 hover:text-[#3182CE] hover:bg-blue-50 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 relative"
-          >
-            <div className="relative p-1.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-              <ShoppingCart className="w-4 h-4" />
-              {isAuthenticated && itemsCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-lg animate-pulse min-w-[24px] border-2 border-white">
-                  {itemsCount > 99 ? '99+' : itemsCount}
-                </span>
-              )}
-            </div>
-            <span>Cart</span>
-          </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          onClick={() => handleProtectedAction("chat")}
+          variant="ghost"
+          className="flex items-center gap-2 rounded-xl px-4 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-blue-50 hover:text-[#2563eb]"
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span>Chat</span>
+        </Button>
 
-          {/* User Authentication */}
-          {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="flex items-center gap-3 text-gray-700 hover:text-[#3182CE] hover:bg-blue-50 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105"
-                >
-                  <div className="relative">
-                    <img
-                      src={user?.picture || `https://ui-avatars.com/api/?name=${user?.name}&background=3182CE&color=fff`}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full border-2 border-blue-200 shadow-sm"
-                    />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
-                  </div>
-                  <span className="hidden xl:inline font-medium">{user?.name?.split(' ')[0]}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 bg-white border border-gray-200 shadow-xl rounded-2xl p-2">
-                <DropdownMenuLabel className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50">
+        <Button
+          onClick={() => handleProtectedAction("cart")}
+          variant="ghost"
+          className="relative flex items-center gap-2 rounded-xl px-4 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-blue-50 hover:text-[#2563eb]"
+        >
+          <div className="relative">
+            <ShoppingCart className="h-4 w-4" />
+            {isAuthenticated && itemsCount > 0 && (
+              <span className="absolute -right-3 -top-2 flex h-5 min-w-[20px] items-center justify-center rounded-full border border-white bg-gradient-to-r from-red-500 to-red-600 px-1 text-[10px] font-bold text-white shadow-lg">
+                {itemsCount > 99 ? "99+" : itemsCount}
+              </span>
+            )}
+          </div>
+          <span>Cart</span>
+        </Button>
+
+        {isAuthenticated ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center gap-3 rounded-xl px-4 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-blue-50 hover:text-[#2563eb]"
+              >
+                <div className="relative">
                   <img
                     src={user?.picture || `https://ui-avatars.com/api/?name=${user?.name}&background=3182CE&color=fff`}
                     alt="Profile"
-                    className="w-12 h-12 rounded-full border-2 border-blue-200 shadow-sm"
+                    className="h-8 w-8 rounded-full border-2 border-blue-200 shadow-sm"
                   />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-[#2D3748]">{user?.name}</span>
-                    <span className="text-xs text-gray-500">{user?.email}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="my-2" />
-                <DropdownMenuItem 
-                  onClick={() => navigate('/dashboard')}
-                  className="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-blue-50 transition-colors"
-                >
-                  <div className="p-1.5 bg-blue-100 rounded-lg">
-                    <User className="w-4 h-4 text-[#3182CE]" />
-                  </div>
-                  <span className="font-medium">Dashboard</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-red-50 text-red-600 focus:text-red-600 transition-colors"
-                >
-                  <div className="p-1.5 bg-red-100 rounded-lg">
-                    <LogOut className="w-4 h-4" />
-                  </div>
-                  <span className="font-medium">Sign Out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => navigate('/login')}
-                variant="ghost"
-                className="text-gray-700 hover:text-[#3182CE] hover:bg-blue-50 px-6 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105"
-              >
-                Sign In
+                  <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-green-400" />
+                </div>
+                <span className="hidden xl:inline">{user?.name?.split(" ")[0]}</span>
+                <ChevronDown className="h-4 w-4 text-slate-400" />
               </Button>
-              <Button
-                onClick={() => navigate('/register')}
-                className="bg-gradient-to-r from-[#3182CE] to-blue-600 hover:from-[#2C5282] hover:to-blue-700 text-white px-6 py-2 rounded-xl font-medium shadow-lg transform hover:scale-105 transition-all duration-200"
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+              <DropdownMenuLabel className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-3">
+                <img
+                  src={user?.picture || `https://ui-avatars.com/api/?name=${user?.name}&background=3182CE&color=fff`}
+                  alt="Profile"
+                  className="h-12 w-12 rounded-full border-2 border-blue-200 shadow-sm"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-[#2D3748]">{user?.name}</span>
+                  <span className="text-xs text-gray-500">{user?.email}</span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="my-2" />
+              <DropdownMenuItem
+                onClick={() => navigate("/dashboard")}
+                className="flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-colors hover:bg-blue-50"
               >
-                Sign Up
-              </Button>
-            </div>
-          )}
-        </div>
+                <div className="rounded-lg bg-blue-100 p-1.5">
+                  <User className="h-4 w-4 text-[#3182CE]" />
+                </div>
+                <span className="font-medium">Dashboard</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="flex cursor-pointer items-center gap-3 rounded-xl p-3 text-red-600 transition-colors hover:bg-red-50 focus:text-red-600"
+              >
+                <div className="rounded-lg bg-red-100 p-1.5">
+                  <LogOut className="h-4 w-4" />
+                </div>
+                <span className="font-medium">Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => navigate("/login")}
+              variant="ghost"
+              className="rounded-xl px-6 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-blue-50 hover:text-[#2563eb]"
+            >
+              Sign In
+            </Button>
+            <Button
+              onClick={() => navigate("/register")}
+              className="rounded-xl bg-[#2563eb] px-6 py-2 font-medium text-white shadow-lg transition-all duration-200 hover:bg-[#1d4ed8]"
+            >
+              Sign Up
+            </Button>
+          </div>
+        )}
       </div>
-
-    </>
+    </div>
   )
 }
 
