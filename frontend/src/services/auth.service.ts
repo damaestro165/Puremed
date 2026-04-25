@@ -21,6 +21,7 @@ export interface AuthResponse {
         name?: string;
         picture?: string;
         provider?: 'local' | 'google';
+        role?: 'customer' | 'admin';
     };
     message: string;
 }

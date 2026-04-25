@@ -16,6 +16,12 @@ import jwt from 'jsonwebtoken';
 
 
 const router = Router();
+const signAuthToken = (user) =>
+    jwt.sign(
+        { userId: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+    );
 
 router.post('/register',checkSchema(userValidationSchema) ,async (req, res) => {
     const result = validationResult(req);
@@ -39,11 +45,7 @@ router.post('/register',checkSchema(userValidationSchema) ,async (req, res) => {
             provider: 'local'
         });
 
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        const token = signAuthToken(user);
 
         res.status(201).json({
             message: "User created successfully",
@@ -51,7 +53,10 @@ router.post('/register',checkSchema(userValidationSchema) ,async (req, res) => {
             user: {
                 id: user._id,
                 email: user.email,
-                name: user.name,    
+                name: user.name,
+                picture: user.picture,
+                provider: user.provider,
+                role: user.role
             }
         });
     } catch (error) {
@@ -75,11 +80,7 @@ router.post('/login',
                 return res.status(400).json({ message: info.message });
             }
     
-            const token = jwt.sign(
-                { userId: user._id },
-                process.env.JWT_SECRET,
-                { expiresIn: '24h' }
-            );
+            const token = signAuthToken(user);
     
             res.json({
                 message: "Login successful",
@@ -88,6 +89,9 @@ router.post('/login',
                     id: user._id,
                     email: user.email,
                     name: user.name,
+                    picture: user.picture,
+                    provider: user.provider,
+                    role: user.role
                 }
             });
         })(req, res, next);
@@ -108,11 +112,7 @@ router.get('/google/callback',
         // Redirect to frontend success page or dashboard
       const user = req.user; 
       // The user object is added to the request by passport
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        const token = signAuthToken(user);
         // Redirect to frontend callback with token
         res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
     }
@@ -140,7 +140,8 @@ router.get('/me', (req, res, next) => {
                 email: user.email,
                 name: user.name,
                 picture: user.picture,
-                provider: user.provider
+                provider: user.provider,
+                role: user.role
             }
         });
     })(req, res, next);

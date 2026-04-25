@@ -13,6 +13,7 @@ import { categoryRouter, medicationRouter } from "./routes/product.routes.js";
 import  cartRouter  from "./routes/cart.routes.js";
 import chatRoutes from './routes/chat.routes.js';
 import prescriptionRouter from './routes/prescription.routes.js';
+import orderRouter from './routes/order.routes.js';
 
 
 const app = express();
@@ -69,6 +70,7 @@ app.use('/api/medications', medicationRouter); // Serve static files from 'publi
 app.use('/api/cart', cartRouter);
 app.use('/api/chats', chatRoutes);
 app.use('/api/prescription', prescriptionRouter);
+app.use('/api/orders', orderRouter);
 
 
 const PORT = process.env.PORT|| 8080;

@@ -13,10 +13,10 @@ export const authenticateToken = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // Fix: Set req.user instead of req.userId to match controller expectations
         req.user = { 
             id: decoded.userId,
-            ...decoded // Include other user data if needed
+            role: decoded.role,
+            ...decoded
         };
         next();
     } catch (error) {
@@ -26,4 +26,15 @@ export const authenticateToken = (req, res, next) => {
             message: "Invalid token" 
         });
     }
+};
+
+export const requireRole = (...roles) => (req, res, next) => {
+    if (!req.user?.role || !roles.includes(req.user.role)) {
+        return res.status(403).json({
+            success: false,
+            message: 'You do not have permission to perform this action.'
+        });
+    }
+
+    next();
 };

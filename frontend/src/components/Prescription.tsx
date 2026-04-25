@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, Camera, FileText, Loader2, CheckCircle, AlertTriangle, Info, X, Pill, Clock, Hash, Syringe, ShoppingBag } from 'lucide-react';
+import { Upload, Camera, FileText, Loader2, CheckCircle, AlertTriangle, Info, X, Pill, Clock, Hash, Syringe } from 'lucide-react';
 
 // Type definitions
 interface Medication {
@@ -26,67 +26,6 @@ interface ExtractedPrescriptionData {
   }>;
 }
 
-interface ActiveIngredient {
-  name: string;
-  strength: string;
-}
-
-interface Manufacturer {
-  name: string;
-  country: string;
-}
-
-interface ProductImage {
-  url: string;
-  alt: string;
-  isPrimary: boolean;
-}
-
-interface Ratings {
-  average: number;
-  count: number;
-}
-
-interface Product {
-  _id: string;
-  name: string;
-  genericName: string;
-  brandName: string;
-  description: string;
-  category: string;
-  activeIngredients: ActiveIngredient[];
-  dosageForm: string;
-  strength: string;
-  packageSize: string;
-  sku: string;
-  barcode: string;
-  price: number;
-  costPrice: number;
-  stock: number;
-  minStockLevel: number;
-  maxStockLevel: number;
-  requiresPrescription: boolean;
-  manufacturingDate: string;
-  expiryDate: string;
-  manufacturer: Manufacturer;
-  dosageInstructions: string;
-  warnings: string[];
-  sideEffects: string[];
-  contraindications: string[];
-  images: ProductImage[];
-  tags: string[];
-  isActive: boolean;
-  isFeatured: boolean;
-  isOnSale: boolean;
-  ratings: Ratings;
-}
-
-interface MedicationMatch {
-  prescribed: Medication;
-  matches: Product[];
-  selected: Product | null;
-}
-
 interface PrescriptionUploadProps {
   onPrescriptionProcessed: (data: ExtractedPrescriptionData) => void;
 }
@@ -97,8 +36,6 @@ const PrescriptionUpload: React.FC<PrescriptionUploadProps> = ({ onPrescriptionP
   const [dragActive, setDragActive] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [lastResult, setLastResult] = useState<ExtractedPrescriptionData | null>(null);
-  const [foundMedications, setFoundMedications] = useState<MedicationMatch[]>([]);
-  const [isSearchingMedications, setIsSearchingMedications] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -238,7 +175,8 @@ const processPrescriptions = async () => {
       });
 
       if (!response.ok) {
-        throw new Error('Processing failed');
+        const errorPayload = await response.json().catch(() => null);
+        throw new Error(errorPayload?.message || 'Processing failed');
       }
 
       const result: ExtractedPrescriptionData = await response.json();
@@ -246,7 +184,6 @@ const processPrescriptions = async () => {
       if (result) {
         setLastResult(result);
         onPrescriptionProcessed(result);
-        await searchMedications(result.medications);
       } else {
         alert('Processing failed');
       }
@@ -264,51 +201,6 @@ const processPrescriptions = async () => {
     setProcessingProgress(0);
   }
 };
-
-const searchMedications = async (medications: Medication[]) => {
-  setIsSearchingMedications(true);
-
-  try {
-    const searchResults = await Promise.all(
-      medications.map(async (medication): Promise<MedicationMatch | null> => {
-        if (!medication.name || medication.name.length < 3) {
-          return null;
-        }
-
-        const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/medications?search=${encodeURIComponent(medication.name)}`
-        );
-
-        if (!response.ok) {
-          console.error(`Search failed for ${medication.name}`);
-          return null;
-        }
-
-        const matches: Product[] = await response.json();
-
-        return {
-          prescribed: medication,
-          matches: Array.isArray(matches) ? matches : [],
-          selected: null,
-        };
-      })
-    );
-
-    const validResults = searchResults.filter((med): med is MedicationMatch => med !== null);
-    setFoundMedications(validResults);
-  } catch (error) {
-    console.error('Medication search error:', error);
-    alert('Failed to search for medications. Please try again.');
-  } finally {
-    setIsSearchingMedications(false);
-  }
-};
-
-  const selectMedication = (medicationIndex: number, productIndex: number) => {
-    const updated = [...foundMedications];
-    updated[medicationIndex].selected = updated[medicationIndex].matches[productIndex];
-    setFoundMedications(updated);
-  };
 
   // Remove file from selection
   const removeFile = (index: number) => {

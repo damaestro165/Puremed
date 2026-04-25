@@ -31,6 +31,12 @@ const userSchema = new mongoose.Schema({
         enum: ['local', 'google'],
         default: 'local'
     },
+    role: {
+        type: String,
+        required: true,
+        enum: ['customer', 'admin'],
+        default: 'customer'
+    },
     createdAt: {
         type: Date,
         default: Date.now

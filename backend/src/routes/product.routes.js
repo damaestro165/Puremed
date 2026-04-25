@@ -1,6 +1,7 @@
 import express from 'express';
 import { Category, Medication } from '../models/product.model.js';// Adjust path as needed
 import mongoose from 'mongoose';
+import { authenticateToken, requireRole } from '../middleware/auth.middleware.js';
 
 // Category Routes
 const categoryRouter = express.Router();
@@ -70,7 +71,7 @@ categoryRouter.get('/slug/:slug', async (req, res) => {
 });
 
 // POST /api/categories - Create new category
-categoryRouter.post('/', async (req, res) => {
+categoryRouter.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const category = new Category(req.body);
     await category.save();
@@ -89,7 +90,7 @@ categoryRouter.post('/', async (req, res) => {
 });
 
 // PUT /api/categories/:id - Update category
-categoryRouter.put('/:id', async (req, res) => {
+categoryRouter.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const category = await Category.findByIdAndUpdate(
       req.params.id,
@@ -117,7 +118,7 @@ categoryRouter.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/categories/:id - Soft delete category
-categoryRouter.delete('/:id', async (req, res) => {
+categoryRouter.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const category = await Category.findByIdAndUpdate(
       req.params.id,
@@ -484,7 +485,7 @@ medicationRouter.get('/:id', async (req, res) => {
 });
 
 // POST /api/medications - Create new medication
-medicationRouter.post('/', async (req, res) => {
+medicationRouter.post('/', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const medication = new Medication(req.body);
     await medication.save();
@@ -505,7 +506,7 @@ medicationRouter.post('/', async (req, res) => {
 });
 
 // PUT /api/medications/:id - Update medication
-medicationRouter.put('/:id', async (req, res) => {
+medicationRouter.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const medication = await Medication.findByIdAndUpdate(
       req.params.id,
@@ -535,7 +536,7 @@ medicationRouter.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/medications/:id - Soft delete medication
-medicationRouter.delete('/:id', async (req, res) => {
+medicationRouter.delete('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const medication = await Medication.findByIdAndUpdate(
       req.params.id,
@@ -564,7 +565,7 @@ medicationRouter.delete('/:id', async (req, res) => {
 });
 
 // PUT /api/medications/:id/stock - Update medication stock
-medicationRouter.put('/:id/stock', async (req, res) => {
+medicationRouter.put('/:id/stock', authenticateToken, requireRole('admin'), async (req, res) => {
   try {
     const { stock, operation = 'set' } = req.body; // operation: 'set', 'add', 'subtract'
     
