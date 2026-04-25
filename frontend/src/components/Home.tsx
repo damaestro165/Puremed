@@ -164,7 +164,6 @@ const Home: React.FC = () => {
   const handleSearchSubmit = (e: React.FormEvent): void => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      // Navigate to a search results page or show results inline
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }

@@ -16,6 +16,18 @@ import prescriptionRouter from './routes/prescription.routes.js';
 
 
 const app = express();
+const requiredEnvVars = [
+    'MONGODB_CONNECTION_STRING',
+    'FRONTEND_URL',
+    'JWT_SECRET',
+    'SESSION_SECRET'
+];
+const missingEnvVars = requiredEnvVars.filter((name) => !process.env[name]);
+
+if (missingEnvVars.length > 0) {
+    console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+    process.exit(1);
+}
 
 
 mongoose.connect(process.env.MONGODB_CONNECTION_STRING)
@@ -30,7 +42,7 @@ mongoose.connect(process.env.MONGODB_CONNECTION_STRING)
 app.use(cookieParser());
 
 app.use(session({
-    secret: 'your_secret_key567',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 60000 * 60 * 4 },

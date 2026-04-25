@@ -11,18 +11,17 @@ useEffect(() => {
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
 
-            console.log('Token received:', token); // Debug log
-
             if (!token) {
-                setError('No token received');
+                setError('Google login did not return a token.');
                 return;
             }
 
             await authService.handleGoogleCallback(token);
-            window.location.href = '/';
+            window.location.replace('/');
         } catch (err) {
-            console.error('Full error:', err); // More detailed error logging
-            setError(`Failed to process Google login: ${err}`);
+            console.error('Google login callback failed:', err);
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            setError(`Failed to process Google login: ${message}`);
         }
     };
 

@@ -10,6 +10,8 @@ import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import PrescriptionPage from './pages/PrescriptionPage';
 import ChatPage from './pages/Chatpage';
+import CheckoutPage from './pages/CheckoutPage';
+import SearchPage from './pages/SearchPage';
 
 function App() {
   return (
@@ -21,8 +23,9 @@ function App() {
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/auth/callback" element={<GoogleCallback />} />
         <Route path="/category/:slug" element={<CategoryPage />} />
-        <Route path="/product/:slug" element={<ProductPage />} />
+        <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/prescription" element={<PrescriptionPage />} />
+        <Route path="/search" element={<SearchPage />} />
         {/* Protected routes */}
         <Route
           path="/dashboard"
@@ -48,6 +51,14 @@ function App() {
             <ProtectedRoute>
               {/* Add your cart component here */}
            <CartPage/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <CheckoutPage />
             </ProtectedRoute>
           }
         />

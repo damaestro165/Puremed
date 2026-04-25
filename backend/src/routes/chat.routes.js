@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { Chat } from '../models/chat.model.js';
 import passport from 'passport';
-import { HfInference } from '@huggingface/inference';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
 const router = Router();
+const GENERAL_MEDICAL_DISCLAIMER =
+    'This is general information only - not a substitute for professional medical care. Consult a real doctor.';
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const uploadPath = 'uploads/chat';
@@ -18,44 +18,40 @@ const storage = multer.diskStorage({
         cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
-const upload = multer({ 
-    storage: storage,
+const upload = multer({
+    storage,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
+        fileSize: 10 * 1024 * 1024
     },
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-        
+
         if (mimetype && extname) {
             return cb(null, true);
-        } else {
-            cb(new Error('Only images and documents are allowed'));
         }
+
+        cb(new Error('Only images and documents are allowed'));
     }
 });
 
-// Initialize Hugging Face
-const hf = new HfInference(process.env.HF_TOKEN);
-
-// Middleware to authenticate user
 const authenticateUser = (req, res, next) => {
     passport.authenticate('jwt', { session: false }, (err, user, info) => {
         if (err) {
-            return res.status(500).json({ 
-                error: 'Authentication error', 
-                details: err.message 
+            return res.status(500).json({
+                error: 'Authentication error',
+                details: err.message
             });
         }
-        
+
         if (!user) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 error: 'Invalid or expired token',
                 details: info ? info.message : 'No user found'
             });
@@ -66,26 +62,22 @@ const authenticateUser = (req, res, next) => {
     })(req, res, next);
 };
 
-// GET /api/chats - Get all user's chats
 router.get('/', authenticateUser, async (req, res) => {
     try {
-        const chats = await Chat.find({ 
+        const chats = await Chat.find({
             userId: req.user._id,
-            isActive: true 
+            isActive: true
         })
-        .select('title createdAt updatedAt messages')
-        .sort({ updatedAt: -1 });
+            .select('title createdAt updatedAt messages')
+            .sort({ updatedAt: -1 });
 
-        // Transform to include last message preview
-        const chatsWithPreview = chats.map(chat => ({
+        const chatsWithPreview = chats.map((chat) => ({
             id: chat._id,
             title: chat.title,
             createdAt: chat.createdAt,
             updatedAt: chat.updatedAt,
             messageCount: chat.messages.length,
-            lastMessage: chat.messages.length > 0 
-                ? chat.messages[chat.messages.length - 1]
-                : null
+            lastMessage: chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null
         }));
 
         res.json({
@@ -101,7 +93,6 @@ router.get('/', authenticateUser, async (req, res) => {
     }
 });
 
-// GET /api/chats/:chatId - Get specific chat with all messages
 router.get('/:chatId', authenticateUser, async (req, res) => {
     try {
         const chat = await Chat.findOne({
@@ -136,7 +127,6 @@ router.get('/:chatId', authenticateUser, async (req, res) => {
     }
 });
 
-// POST /api/chats - Create new chat
 router.post('/', authenticateUser, async (req, res) => {
     try {
         const { title, initialMessage } = req.body;
@@ -147,15 +137,13 @@ router.post('/', authenticateUser, async (req, res) => {
             messages: []
         });
 
-        // Add initial doctor message
         chat.messages.push({
-            text: "Hello! I'm Dr. Sarah, an AI simulating a doctor. Describe your symptoms, and I'll provide general health advice. Remember, this is not real medical advice—consult a professional doctor for any health issues.",
+            text: `Hello! I'm Dr. Sarah, an AI simulating a doctor. Describe your symptoms, and I'll provide general health advice. Remember, this is not real medical advice - consult a professional doctor for any health issues.`,
             sender: 'doctor',
             timestamp: new Date(),
             status: 'read'
         });
 
-        // Add user's initial message if provided
         if (initialMessage && initialMessage.trim()) {
             chat.messages.push({
                 text: initialMessage.trim(),
@@ -186,14 +174,11 @@ router.post('/', authenticateUser, async (req, res) => {
     }
 });
 
-
-// POST /api/chats/:chatId/messages - Send message to specific chat
 router.post('/:chatId/messages', authenticateUser, upload.single('attachment'), async (req, res) => {
     try {
         const { text } = req.body;
         const chatId = req.params.chatId;
 
-        // Require either text or attachment
         if ((!text || !text.trim()) && !req.file) {
             return res.status(400).json({
                 success: false,
@@ -214,15 +199,13 @@ router.post('/:chatId/messages', authenticateUser, upload.single('attachment'), 
             });
         }
 
-        // Create user message
         const userMessage = {
-            text: text ? text.trim() : '', // Allow empty text if attachment present
+            text: text ? text.trim() : '',
             sender: 'user',
             timestamp: new Date(),
             status: 'sent'
         };
 
-        // Handle file attachment
         if (req.file) {
             userMessage.attachment = {
                 type: req.file.mimetype.startsWith('image/') ? 'image' : 'file',
@@ -235,10 +218,9 @@ router.post('/:chatId/messages', authenticateUser, upload.single('attachment'), 
         chat.messages.push(userMessage);
         await chat.save();
 
-        // Generate AI response
         try {
             const aiResponse = await generateDoctorResponse(chat.messages, userMessage.text || 'User sent an attachment');
-            
+
             const doctorMessage = {
                 text: aiResponse,
                 sender: 'doctor',
@@ -261,10 +243,9 @@ router.post('/:chatId/messages', authenticateUser, upload.single('attachment'), 
             });
         } catch (aiError) {
             console.error('AI Response Error:', aiError);
-            
-            // Send fallback response
+
             const fallbackMessage = {
-                text: "This is general information only—not a substitute for professional medical care. Consult a real doctor. I'm experiencing some technical difficulties right now. Please try again in a moment, and if symptoms are urgent, please seek immediate medical attention.",
+                text: `${GENERAL_MEDICAL_DISCLAIMER} I'm experiencing some technical difficulties right now. Please try again in a moment, and if symptoms are urgent, please seek immediate medical attention.`,
                 sender: 'doctor',
                 timestamp: new Date(),
                 status: 'read'
@@ -293,7 +274,6 @@ router.post('/:chatId/messages', authenticateUser, upload.single('attachment'), 
     }
 });
 
-// PUT /api/chats/:chatId - Update chat title
 router.put('/:chatId', authenticateUser, async (req, res) => {
     try {
         const { title } = req.body;
@@ -311,7 +291,7 @@ router.put('/:chatId', authenticateUser, async (req, res) => {
                 userId: req.user._id,
                 isActive: true
             },
-            { 
+            {
                 title: title.trim(),
                 updatedAt: new Date()
             },
@@ -343,7 +323,6 @@ router.put('/:chatId', authenticateUser, async (req, res) => {
     }
 });
 
-// DELETE /api/chats/:chatId - Delete (soft delete) chat
 router.delete('/:chatId', authenticateUser, async (req, res) => {
     try {
         const chat = await Chat.findOneAndUpdate(
@@ -352,7 +331,7 @@ router.delete('/:chatId', authenticateUser, async (req, res) => {
                 userId: req.user._id,
                 isActive: true
             },
-            { 
+            {
                 isActive: false,
                 updatedAt: new Date()
             }
@@ -378,65 +357,63 @@ router.delete('/:chatId', authenticateUser, async (req, res) => {
     }
 });
 
-// Helper function to generate AI doctor response
 async function generateDoctorResponse(messages, userMessage) {
     try {
-        // Prepare conversation context
         const conversationHistory = messages
-            .filter(msg => msg.sender === 'user' || msg.sender === 'doctor')
-            .slice(-10) // Keep last 10 messages for context
-            .map(msg => ({
+            .filter((msg) => msg.sender === 'user' || msg.sender === 'doctor')
+            .slice(-10)
+            .map((msg) => ({
                 role: msg.sender === 'user' ? 'user' : 'assistant',
                 content: msg.text
             }));
 
         const apiMessages = [
             {
-                role: "system",
-                content: "You are Dr. Sarah, a knowledgeable AI doctor. Based on user descriptions, provide possible diagnoses, medication suggestions, prescriptons and health advice. Always start responses with: 'This is general information only—not a substitute for professional medical care. Consult a real doctor.' Be empathetic, accurate, and suggest seeking immediate help for serious issues. Keep responses concise but informative."
+                role: 'system',
+                content: `You are Dr. Sarah, a knowledgeable AI doctor. Based on user descriptions, provide possible diagnoses, medication suggestions, prescriptons and health advice. Always start responses with: '${GENERAL_MEDICAL_DISCLAIMER}' Be empathetic, accurate, and suggest seeking immediate help for serious issues. Keep responses concise but informative.`
             },
             ...conversationHistory,
             {
-                role: "user",
+                role: 'user',
                 content: userMessage
             }
         ];
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+
         const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+                Authorization: `Bearer ${process.env.HF_TOKEN}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "meta-llama/Llama-3.1-8B-Instruct",
+                model: 'meta-llama/Llama-3.1-8B-Instruct',
                 messages: apiMessages,
                 max_tokens: 500,
                 temperature: 0.7,
                 stream: false
-            })
+            }),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             throw new Error(`API returned ${response.status}`);
         }
 
         const data = await response.json();
-        
-        if (data.choices && data.choices[0] && data.choices[0].message) {
+
+        if (data.choices && data.choices[0] && data.choices[0].message?.content) {
             return data.choices[0].message.content.trim();
-        } else {
-            throw new Error('Unexpected response format');
         }
+
+        throw new Error('Unexpected response format');
     } catch (error) {
         console.error('Hugging Face API Error:', error);
-        
-        // Fallback responses
-        const fallbacks = [
-            "This is general information only—not a substitute for professional medical care.",
-        ];
-        
-        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        return GENERAL_MEDICAL_DISCLAIMER;
     }
 }
 

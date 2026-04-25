@@ -20,6 +20,7 @@ export interface AuthResponse {
         email: string;
         name?: string;
         picture?: string;
+        provider?: 'local' | 'google';
     };
     message: string;
 }
@@ -136,33 +137,26 @@ class AuthService {
             if (!token) {
                 throw { message: 'No token provided' } as AuthError;
             }
-    
-            console.log('Storing token:', token); // Debug log
+
             localStorage.setItem('token', token);
             
             // Fetch user data with the token
-            console.log('Fetching user data...'); // Debug log
             const response = await axios.get(`${API_URL}/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
-            console.log('User response:', response.data); // Debug log
-            
+
             if (response.data.user) {
                 localStorage.setItem('user', JSON.stringify(response.data.user));
             }
         } catch (error) {
-            console.error('Auth service error:', error); // Debug log
+            console.error('Auth service error:', error);
             
             // More specific error handling
             if (error.response) {
-                console.error('Response error:', error.response.data);
                 throw new Error(`Server error: ${error.response.status} - ${error.response.data.message || 'Unknown error'}`);
             } else if (error.request) {
-                console.error('Request error:', error.request);
                 throw new Error('Network error - please check your connection');
             } else {
-                console.error('Setup error:', error.message);
                 throw new Error(error.message || 'Unknown error occurred');
             }
         }

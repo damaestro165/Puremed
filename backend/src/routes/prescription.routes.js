@@ -7,19 +7,55 @@ import "dotenv/config";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 const cache = new Map();
+const REQUEST_TIMEOUT_MS = 20000;
+
 // Hugging Face Query Function
 async function query(data) {
-  const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
-    headers: {
-      Authorization: `Bearer ${process.env.HF_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-  const result = await response.json();
-  return result;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+      headers: {
+        Authorization: `Bearer ${process.env.HF_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify(data),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Prescription AI request failed with status ${response.status}`);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
+
+function normalizeStructuredData(structuredData, extractedText = "") {
+  const normalizedMedications = Array.isArray(structuredData.medications)
+    ? structuredData.medications
+        .filter((medication) => medication && typeof medication.name === "string" && medication.name.trim())
+        .map((medication) => ({
+          name: medication.name.trim(),
+          dosage: typeof medication.dosage === "string" ? medication.dosage.trim() : "",
+          frequency: typeof medication.frequency === "string" ? medication.frequency.trim() : "",
+        }))
+    : [];
+
+  return {
+    patientName: typeof structuredData.patientName === "string" ? structuredData.patientName.trim() : null,
+    doctorName: typeof structuredData.doctorName === "string" ? structuredData.doctorName.trim() : null,
+    date: typeof structuredData.date === "string" ? structuredData.date.trim() : null,
+    medications: normalizedMedications,
+    rawText: typeof structuredData.rawText === "string" ? structuredData.rawText : extractedText,
+    confidence: typeof structuredData.confidence === "number" ? structuredData.confidence : normalizedMedications.length > 0 ? 0.7 : 0.3,
+  };
+}
+
 function extractMedications(rawText) {
   const medications = [];
   const medicationPatterns = [
@@ -129,11 +165,12 @@ router.post("/process", upload.single("file"), async (req, res) => {
     }
 
     // Cache result
-    cache.set(hash, structuredData);
+    const normalizedData = normalizeStructuredData(structuredData, extractedText);
+    cache.set(hash, normalizedData);
 
     res.json({
       success: true,
-      ...structuredData,
+      ...normalizedData,
       processingTime: Date.now() - startTime,
       cached: false,
     });

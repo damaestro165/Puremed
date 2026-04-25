@@ -51,7 +51,7 @@ interface ProductApiResponse {
 
 const ProductPage: React.FC = () => {
   const params = useParams()
-  const productId = params.slug
+  const productId = params.id
   const navigate = useNavigate()
   
   const [product, setProduct] = useState<Product | null>(null)
@@ -235,7 +235,7 @@ const ProductPage: React.FC = () => {
         {/* Product Section */}
         <div className="grid lg:grid-cols-2 gap-12 mb-12">
           {/* Image Gallery */}
-          <div className="space-y-4">
+            <div className="space-y-4">
             <div className="relative bg-white rounded-2xl overflow-hidden shadow-lg group">
               <div className="aspect-square">
                 <img 

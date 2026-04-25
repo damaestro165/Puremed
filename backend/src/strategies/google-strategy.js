@@ -25,6 +25,13 @@ export default passport.use(new GoogleStrategy({
     callbackURL: process.env.GOOGLE_CALLBACK_URL || "/api/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
     try {
+        const email = profile.emails?.[0]?.value;
+        const picture = profile.photos?.[0]?.value;
+
+        if (!email) {
+            return done(new Error('Google account did not provide an email address'), null);
+        }
+
         // Check if user already exists with this Google ID
         let user = await User.findOne({ googleId: profile.id });
 
@@ -34,7 +41,7 @@ export default passport.use(new GoogleStrategy({
         }
 
         // Check if user exists with the same email
-        user = await User.findOne({ email: profile.emails[0].value });
+        user = await User.findOne({ email });
 
         if (user) {
             // User exists with same email, link Google account
@@ -42,7 +49,7 @@ export default passport.use(new GoogleStrategy({
             user.provider = 'google';
             // Optionally update profile info
             user.name = user.name || profile.displayName;
-            user.profilePicture = user.profilePicture || profile.photos[0]?.value;
+            user.picture = user.picture || picture;
             await user.save();
             return done(null, user);
         }
@@ -50,11 +57,10 @@ export default passport.use(new GoogleStrategy({
         // Create new user
         user = new User({
             googleId: profile.id,
-            email: profile.emails[0].value,
+            email,
             name: profile.displayName,
-            profilePicture: profile.photos[0]?.value,
-            provider: 'google',
-            isVerified: true // Google users are pre-verified
+            picture,
+            provider: 'google'
         });
 
         await user.save();
