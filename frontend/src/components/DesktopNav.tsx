@@ -42,9 +42,6 @@ const DesktopNav = () => {
 
   const navItems = [
     { label: "Medicines", action: () => navigate("/search?q=medicine") },
-    { label: "Health Products", action: () => navigate("/search?q=health") },
-    { label: "Health Tips", action: () => navigate("/prescription") },
-    { label: "Consult a Doctor", action: () => handleProtectedAction("chat") },
   ]
 
   return (

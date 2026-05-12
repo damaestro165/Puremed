@@ -47,18 +47,6 @@ const MobileNav = () => {
       show: true
     },
     {
-      icon: <Grid3X3 className="w-5 h-5" />,
-      label: "Categories",
-      action: () => navigate('/'),
-      show: true
-    },
-    {
-      icon: <MessageCircle className="w-5 h-5" />,
-      label: "Chat with Doctor",
-      action: () => handleProtectedAction('chat'),
-      show: true
-    },
-    {
       icon: <ShoppingCart className="w-5 h-5" />,
       label: "Cart",
       action: () => handleProtectedAction('cart'),
